@@ -1,0 +1,12 @@
+[package]
+name = "project"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "identifiers"
+path = "src/bin/identifiers.rs"
+
+[dependencies]
+clap = { version = "4.0.29" }
+csv = { version = "1.1" }
