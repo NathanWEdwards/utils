@@ -10,15 +10,15 @@ EnsEMBL search generates a CSV file (comma delimited) of EnsEMBL identifier entr
 
   **-c**, **--certificate** <certificates>  A DER-encoded X.509 file
 
-  **-i**, **--index** <index>               A column index to take the set of values.
+  **-i**, **--index** <index>               A column index to take the set of values
  
   **-d**, **--delimiter** <delimiter>       The delimiter character that separates each field value (e.g. ',', ';', '\t')
  
   **-f**, **--file** <file>                 The flat file (e.g. CSV, TSV) file path to parse for identifiers
  
-  **-n**, **--no-headers**                  A flag that indicates no header row is present.
+  **-n**, **--no-headers**                  A flag that indicates no header row is present
  
-  **-O**, **--output** <output>             The output file name and path to write a CSV file.
+  **-O**, **--output** <output>             The output file name and path to write a CSV file
 
   **-h**, **--help**                        Print help information
 
@@ -60,13 +60,13 @@ Identifiers outputs to standard output a set of identifiers from a column presen
 
 <ins>Options:</ins>
 
-  **-i**, **--index** <index>          A column index to take the set of values.      
+  **-i**, **--index** <index>          A column index to take the set of values      
 
-  **-d**, **--delimiter** <delimiter>  The delimiter character that separates each field value (e.g. ',', ';', '\t').
+  **-d**, **--delimiter** <delimiter>  The delimiter character that separates each field value (e.g. ',', ';', '\t')
  
-  **-f**, **--file** <file>            The flat file (e.g. CSV, TSV) file path to parse for identifiers.
+  **-f**, **--file** <file>            The flat file (e.g. CSV, TSV) file path to parse for identifiers
  
-  **-n**, **--no-headers**             A flag that indicates no header row is present.  
+  **-n**, **--no-headers**             A flag that indicates no header row is present  
   
   **-h**, **--help**                   Print help information
 

@@ -1,5 +1,6 @@
-//! MIT license.
+//!  MIT license.
 
+///  Read a flat file (e.g. CSV, TSV).
 pub fn read(filename: &String, delimiter: u8, has_headers: bool, index: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     // Values to return.
     let mut ret = Vec::<String>::new();

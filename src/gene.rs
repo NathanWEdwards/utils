@@ -5,6 +5,7 @@ use serde::ser::SerializeStruct;
 const ENSEMBL_BASE_URL: &str = "https://rest.ensembl.org";
 const UCSC_GENOME_BASE_URL: &str = "https://api.genome.ucsc.edu";
 
+#[derive(Clone)]
 pub struct Gene {
     assembly_name: String,
     biotype: String,
@@ -23,6 +24,76 @@ pub struct Gene {
     start: String,
     strand: String,
     version: String,
+}
+
+impl Gene {
+    pub fn get_assembly_name(&self) -> &str {
+        return &self.assembly_name;
+    }
+
+    pub fn get_biotype(&self) -> &str {
+        return &self.biotype;
+    }
+
+    pub fn get_canonical_transcript(&self) -> &str {
+        return &self.canonical_transcript;
+    }
+
+    pub fn get_db_type(&self) -> &str {
+        return &self.db_type;
+    }
+
+    pub fn get_description(&self) -> &str {
+        return &self.description;
+    }
+
+    pub fn get_display_name(&self) -> &str {
+        return &self.display_name;
+    }
+
+    pub fn get_dna(&self) -> &str {
+        return &self.dna;
+    }
+
+    pub fn get_end(&self) -> &str {
+        return &self.end;
+    }
+
+    pub fn get_id(&self) -> &str {
+        return &self.id;
+    }
+
+    pub fn get_logic_name(&self) -> &str {
+        return &self.logic_name;
+    }
+
+    pub fn get_object_type(&self) -> &str {
+        return &self.object_type;
+    }
+
+    pub fn get_seq_region_name(&self) -> &str {
+        return &self.seq_region_name;
+    }
+
+    pub fn get_source(&self) -> &str {
+        return &self.source;
+    }
+
+    pub fn get_species(&self) -> &str {
+        return &self.species;
+    }
+
+    pub fn get_start(&self) -> &str {
+        return &self.start;
+    }
+
+    pub fn get_strand(&self) -> &str {
+        return &self.strand;
+    }
+
+    pub fn get_version(&self) -> &str {
+        return &self.version;
+    }
 }
 
 impl serde::ser::Serialize for Gene {
@@ -52,14 +123,55 @@ impl serde::ser::Serialize for Gene {
     }
 }
 
+pub struct GenomeBrowserResponse {
+    pub gene: Gene,
+    pub timestamp: std::time::SystemTime
+}
+
+///  Search genome browsers for gene information.
+/// 
+///  # Example
+///  
+///  ```
+///  let runtime = actix_web::rt::Runtime::new().unwrap();
+///  assert!(
+///  runtime.block_on(async {
+///      let client: awc::Client = awc::Client::default();
+///      let ensembl_id: String = String::from("ENSG00000155542");
+///      let query_for_DNA_please: bool = true;
+///      let last_request_made: Option<std::time::SystemTime> = None;
+///      let number_of_requests_made: Option<u32> = Some(0);
+///      let genome_browser_response = utils::gene::ensembl_search(&client,
+///                                                                &ensembl_id,
+///                                                                query_for_DNA_please,
+///                                                                last_request_made,
+///                                                                number_of_requests_made).await.unwrap();
+///      String::from(genome_browser_response.gene.get_display_name())
+///   }).eq(&String::from("SETD9")));
+///  ```
 pub async fn ensembl_search(
     client: &awc::Client,
     ensembl_id: &String,
     query_dna: bool,
-) -> Result<Gene, Box<dyn std::error::Error>> {
+    last_request_made: Option<std::time::SystemTime>,
+    number_of_requests_made: Option<u32>
+) -> Result<GenomeBrowserResponse, Box<dyn std::error::Error>> {
     let mut resource: String = String::from(ENSEMBL_BASE_URL);
     resource.push_str("/lookup/id/");
     resource.push_str(ensembl_id);
+
+    // A maximum of 5_000 requests can be made per day.
+    // If the number of requests made is supplied and exceeds 5_000 then exit.
+    if number_of_requests_made.is_some() && number_of_requests_made.unwrap() >= 5_000 {
+        eprintln!("{{\"error\": \"The EnsEMBL maximum number of requests (5,000) has been exceeded.\"}}");
+        return Err(Box::new(std::io::Error::from(std::io::ErrorKind::ConnectionRefused)));
+    }
+
+    // A maximum of one request can be made to the EnsEMBL Genome Browser approximately every 67 milliseconds.
+    // Wait 67 milliseconds if the time the last request is made is supplied.
+    if last_request_made.is_some() {
+        crate::time::sleep_until_time_elapsed(last_request_made.unwrap(), 67 as u64);
+    }
 
     let html = match crate::web::get_html_body(client, &resource[..]).await {
         Ok(html) => html,
@@ -127,13 +239,21 @@ pub async fn ensembl_search(
             }
 
             let dna = match query_dna {
-                true => dna_search(client, &assembly_name, &start, &end, &seq_region_name)
+                true => {
+                    // A maximum of one request can be made to the EnsEMBL Genome Browser approximately every 15_000 milliseconds (15 seconds).
+                    // Wait 15_000 milliseconds (15 seconds) if the time the last request is made is supplied.
+                    if last_request_made.is_some() {
+                        crate::time::sleep_until_time_elapsed(last_request_made.unwrap(), 15_000 as u64);
+                    }
+                    dna_search(client, &assembly_name, &start, &end, &seq_region_name)
                     .await
-                    .unwrap_or(String::from("")),
+                    .unwrap_or(String::from(""))
+                },
                 false => String::from(""),
             };
 
-            Ok(Gene {
+            Ok(GenomeBrowserResponse {
+                gene: Gene {
                 assembly_name,
                 biotype,
                 canonical_transcript,
@@ -151,6 +271,8 @@ pub async fn ensembl_search(
                 start,
                 strand,
                 version,
+                },
+                timestamp: std::time::SystemTime::now()
             })
         }
         Err(error) => {
@@ -160,6 +282,7 @@ pub async fn ensembl_search(
     }
 }
 
+///  Search the University of California Santa Cruz Genome Browser for DNA strings.
 pub async fn dna_search(
     client: &awc::Client,
     assembly_name: &String,

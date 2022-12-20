@@ -1,5 +1,6 @@
-//! MIT license.
+//!  MIT license.
 
+///  Parse an HTML document for its pre-format tags and extract the text.
 pub fn parse_pre_elements(html: &str) -> String {
     let mut parsed = String::new();
     let document = scraper::Html::parse_document(html);
