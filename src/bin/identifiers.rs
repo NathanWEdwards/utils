@@ -8,13 +8,13 @@ fn main() {
 
     //  Assign the filename passed as an argument from the command line to a variable.
     //  The input filename argument is required, there should always be an input filename present as an argument because of the clap crate's required(true) implementation.
-    let file = match argument_matches.get_one::<String>("file") {
-        Some(file) => file,
+    let file: &std::path::Path = match argument_matches.get_one::<String>("file") {
+        Some(file) => std::path::Path::new(&file[..]),
         _ => unreachable!("required(true) prevents `None`.")
     };
     
     //  The input file does not exist print to standard error and exit with an error code (1).
-    if std::path::Path::new(file).exists() != true {
+    if file.exists() != true {
         eprintln!("file error: {}", std::io::Error::from(std::io::ErrorKind::NotFound));
         std::process::exit(1);
     }
@@ -45,7 +45,7 @@ fn main() {
     
     //  Read the file and extract identifiers from the column defined by the 'index' argument.
     //  If an error occurs then exit with an exit code (1) and output the error to standard error.
-    match utils::flat_file::read(file, delimiter, has_headers, index) {
+    match utils::flat_file::read_column(file, delimiter, has_headers, index) {
         Ok(list) => {
             let set: std::collections::HashSet<String> = std::collections::HashSet::from_iter(list);
             for element in set {

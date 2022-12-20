@@ -1,5 +1,12 @@
 # Utils
-An ecclectic mix of introductory musings with the Rust language.
+<div align='center'>
+  
+  <h3>An eclectic mix of introductory musings with the Rust language.</h3>
+
+  [![CircleCI](https://dl.circleci.com/status-badge/img/gh/NathanWEdwards/utils/tree/test.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/NathanWEdwards/utils/tree/test) ![License: MIT](https://img.shields.io/badge/License-MIT-blue)
+
+
+</div>
 
 ## EnsEMBL Search
 EnsEMBL search generates a CSV file (comma delimited) of EnsEMBL identifier entries.
