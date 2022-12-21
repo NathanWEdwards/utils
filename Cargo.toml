@@ -15,16 +15,17 @@ name = "ensembl_search"
 path = "src/bin/ensembl_search.rs"
 
 [dependencies]
-actix-web      = { version = "4.2.1" }
-awc            = { version = "3.0.1", features = ["rustls"]}
-clap           = { version = "4.0.29" }
-csv            = { version = "1.1" }
-rustls         = { version = "0.20.7" }
-rustls-pemfile = { version = "1.0.1" }
-scraper        = { version = "0.13.0" }
-serde          = { version = "1.0.151" }
-serde_json     = { version = "1.0.89" }
-serde_yaml     = { version = "0.9.14" }
+actix-web        = { version = "4.2.1" }
+awc              = { version = "3.0.1", features = ["rustls"]}
+clap             = { version = "4.0.29" }
+csv              = { version = "1.1" }
+regex            = { version = "1.7.0" }
+rustls           = { version = "0.20.7" }
+rustls-pemfile   = { version = "1.0.1" }
+scraper          = { version = "0.13.0" }
+serde            = { version = "1.0.151" }
+serde_json       = { version = "1.0.89" }
+serde_yaml       = { version = "0.9.14" }
 
 [dev-dependencies]
-tempfile       = { version = "3.3.0" }
+tempfile         = { version = "3.3.0" }
