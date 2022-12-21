@@ -3,7 +3,7 @@
   
   <h3>An eclectic mix of introductory musings with the Rust language.</h3>
 
-  [![CircleCI](https://dl.circleci.com/status-badge/img/gh/NathanWEdwards/utils/tree/test.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/NathanWEdwards/utils/tree/test) ![License: MIT](https://img.shields.io/badge/License-MIT-blue)
+  [![CircleCI](https://dl.circleci.com/status-badge/img/gh/NathanWEdwards/utils/tree/test.svg?style=shield&circle-token=9804581bed359b4e2a933d8b1ee26c13b57f5866)](https://dl.circleci.com/status-badge/redirect/gh/NathanWEdwards/utils/tree/test) ![License: MIT](https://img.shields.io/badge/License-MIT-blue)
 
 
 </div>
