@@ -15,7 +15,7 @@ EnsEMBL search generates a CSV file (comma delimited) of EnsEMBL identifier entr
  
   **-n**, **--no-headers**                  A flag that indicates no header row is present
  
-  **-O**, **--output** <output>             The output file name and path to write a CSV file.
+  **-O**, **--output** <output>             The output file name and path to write a CSV file
 
   **-h**, **--help**                        Print help information
 
