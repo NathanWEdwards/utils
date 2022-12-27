@@ -16,7 +16,10 @@ impl Sequence {
 }
 
 pub struct Sequences {
-    data: std::collections::BTreeMap<String, std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Sequence>>>>,
+    data: std::collections::BTreeMap<
+        String,
+        std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Sequence>>>,
+    >,
 }
 
 impl Sequences {
@@ -26,11 +29,9 @@ impl Sequences {
         }
     }
 
-
-
     /// Given a sequence of UTF-8 encoded characters, return a vector of sub-strings found in the sequence as a vector of Strings.
     ///
-    /// 
+    ///
     /// # Example
     ///
     /// ```
@@ -57,7 +58,12 @@ impl Sequences {
             None => {
                 self.data.insert(
                     String::from(key),
-                    std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::from([(format!("{}{}", sequence.start, sequence.end).clone(), new_sequence)]))),
+                    std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::from([
+                        (
+                            format!("{}{}", sequence.start, sequence.end).clone(),
+                            new_sequence,
+                        ),
+                    ]))),
                 );
             }
         }
@@ -68,7 +74,8 @@ impl From<String> for Sequences {
     fn from(string: String) -> Self {
         let input_length: usize = string.len();
         let mut sequences: Sequences = Sequences::new();
-        let mut am: Vec<Vec<Sequence>> = vec![vec![Sequence::new(0,0); input_length+1];input_length+1];
+        let mut am: Vec<Vec<Sequence>> =
+            vec![vec![Sequence::new(0, 0); input_length + 1]; input_length + 1];
         // For each character in the sequence,
         for index_i in 1..=input_length {
             // Set the current character value.
@@ -87,7 +94,7 @@ impl From<String> for Sequences {
                         // Add the accumulated sequence to the adjaceny matrix.
                         am[index_i][index_j].start = am[index_i - 1][index_j - 1].start;
                         am[index_i][index_j].end = am[index_i - 1][index_j - 1].end + 1;
-                    } else if index_j - index_i == 1 && am[index_i - 1][index_j - 1].end == 0  {
+                    } else if index_j - index_i == 1 && am[index_i - 1][index_j - 1].end == 0 {
                         // If a repeating character is encountered for the first time,
                         // Add the beginning character's index and the index of the current character
                         // to the adjacency matrix.
@@ -96,18 +103,33 @@ impl From<String> for Sequences {
                     } else {
                         // For all other sequence matches,
                         // Add the beginning sequences's index as an offset from the matched index at `index_j`
-                        // and the ending sequence as `index_j`. 
-                        am[index_i][index_j].start = index_j - (am[index_i - 1][index_j - 1].end - am[index_i - 1][index_j - 1].start) - 1;
+                        // and the ending sequence as `index_j`.
+                        am[index_i][index_j].start = index_j
+                            - (am[index_i - 1][index_j - 1].end
+                                - am[index_i - 1][index_j - 1].start)
+                            - 1;
                         am[index_i][index_j].end = index_j;
                         // Add the sequence excluding the very beginning of the start index.
                         if am[index_i][index_j].end - am[index_i][index_j].start > 1 {
-                            let key: String = String::from(&string[am[index_i][index_j].start + 1..am[index_i][index_j].end]);
-                            sequences.insert(&key, Sequence::new(am[index_i][index_j].start + 1, am[index_i][index_j].end));
+                            let key: String = String::from(
+                                &string[am[index_i][index_j].start + 1..am[index_i][index_j].end],
+                            );
+                            sequences.insert(
+                                &key,
+                                Sequence::new(
+                                    am[index_i][index_j].start + 1,
+                                    am[index_i][index_j].end,
+                                ),
+                            );
                         }
                     }
                     // Add the sequence as an entry to Sequences.
-                    let key: String = String::from(&string[am[index_i][index_j].start..am[index_i][index_j].end]);
-                    sequences.insert(&key, Sequence::new(am[index_i][index_j].start, am[index_i][index_j].end));
+                    let key: String =
+                        String::from(&string[am[index_i][index_j].start..am[index_i][index_j].end]);
+                    sequences.insert(
+                        &key,
+                        Sequence::new(am[index_i][index_j].start, am[index_i][index_j].end),
+                    );
                 }
             }
         }
@@ -121,7 +143,10 @@ impl std::fmt::Display for Sequences {
         for (key, value) in self.data.iter() {
             text.push_str(&format!("sequence: {}:\n", key));
             for (_, sequence) in value.lock().unwrap().iter() {
-                text.push_str(&format!("\tstart: {}, end: {}\n", sequence.start, sequence.end));
+                text.push_str(&format!(
+                    "\tstart: {}, end: {}\n",
+                    sequence.start, sequence.end
+                ));
             }
         }
         writeln!(f, "{text}")
@@ -135,7 +160,7 @@ mod tests {
     #[test]
     fn test_duplicate_string() {
         let string: String = String::from("actact");
-        let expected:Vec<&str> = vec!["a", "ac", "act", "acta", "actac", "actact", "c", "ct", "t"];
+        let expected: Vec<&str> = vec!["a", "ac", "act", "acta", "actac", "actact", "c", "ct", "t"];
         let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
@@ -143,7 +168,7 @@ mod tests {
     #[test]
     fn test_empty_string() {
         let string: String = String::from("");
-        let expected:Vec<&str> = vec![];
+        let expected: Vec<&str> = vec![];
         let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
@@ -151,7 +176,23 @@ mod tests {
     #[test]
     fn test_multiple_repeating_substrings() {
         let string: String = String::from("actgggact");
-        let expected:Vec<&str> = vec!["a", "ac", "act", "actg", "actgg", "actggg", "actggga", "actgggac", "actgggact", "c", "ct", "g", "gg", "ggg", "t"];
+        let expected: Vec<&str> = vec![
+            "a",
+            "ac",
+            "act",
+            "actg",
+            "actgg",
+            "actggg",
+            "actggga",
+            "actgggac",
+            "actgggact",
+            "c",
+            "ct",
+            "g",
+            "gg",
+            "ggg",
+            "t",
+        ];
         let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
@@ -159,7 +200,7 @@ mod tests {
     #[test]
     fn test_repeating_character() {
         let string = String::from("gggg");
-        let expected:Vec<&str> = vec!["g","gg","ggg","gggg"];
+        let expected: Vec<&str> = vec!["g", "gg", "ggg", "gggg"];
         let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
@@ -167,7 +208,9 @@ mod tests {
     #[test]
     fn test_no_repeating_characters() {
         let string: String = String::from("abcdefg");
-        let expected:Vec<&str> = vec!["a", "ab", "abc", "abcd", "abcde", "abcdef", "abcdefg", "b", "c", "d", "e", "f", "g"];
+        let expected: Vec<&str> = vec![
+            "a", "ab", "abc", "abcd", "abcde", "abcdef", "abcdefg", "b", "c", "d", "e", "f", "g",
+        ];
         let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
