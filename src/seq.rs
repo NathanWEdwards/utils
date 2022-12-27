@@ -15,7 +15,7 @@ impl Sequence {
     }
 }
 
-struct Sequences {
+pub struct Sequences {
     data: std::collections::BTreeMap<String, std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Sequence>>>>,
 }
 
@@ -26,6 +26,19 @@ impl Sequences {
         }
     }
 
+
+
+    /// Given a sequence of UTF-8 encoded characters, return a vector of sub-strings found in the sequence as a vector of Strings.
+    ///
+    /// 
+    /// # Example
+    ///
+    /// ```
+    /// let string: String = String::from("actgggact");
+    /// let expected:Vec<&str> = vec!["a", "ac", "act", "actg", "actgg", "actggg", "actggga", "actgggac", "actgggact", "c", "ct", "g", "gg", "ggg", "t"];
+    /// let result: Vec<String> = utils::seq::Sequences::from(string).get_tokens();
+    /// assert_eq!(result, expected);
+    /// ```
     pub fn get_tokens(&self) -> Vec<String> {
         let mut tokens: Vec<String> = Vec::new();
         for key in self.data.keys() {
@@ -34,7 +47,7 @@ impl Sequences {
         return tokens;
     }
 
-    pub fn insert(&mut self, key: &String, sequence: Sequence) {
+    fn insert(&mut self, key: &String, sequence: Sequence) {
         let new_sequence = Sequence::new(sequence.start, sequence.end);
         match self.data.get_mut(key) {
             Some(value) => {
@@ -51,6 +64,57 @@ impl Sequences {
     }
 }
 
+impl From<String> for Sequences {
+    fn from(string: String) -> Self {
+        let input_length: usize = string.len();
+        let mut sequences: Sequences = Sequences::new();
+        let mut am: Vec<Vec<Sequence>> = vec![vec![Sequence::new(0,0); input_length+1];input_length+1];
+        // For each character in the sequence,
+        for index_i in 1..=input_length {
+            // Set the current character value.
+            let current_sequence_value: &str = &string[index_i - 1..index_i];
+            // Compare each character in the sequence to a character in the sequence.
+            for index_j in index_i..=input_length {
+                // Assign the previous character in the sequence to a variable.
+                let previous_sequence_value: &str = &string[index_j - 1..index_j];
+                // If the current character being evaluated matches the previous character,
+                if current_sequence_value == previous_sequence_value {
+                    if index_j - index_i == 0 {
+                        // Add the single character's position as an entry to Sequences.
+                        let key = String::from(&string[index_j - 1..index_j]);
+                        // Insert the matching sequence into a B-Tree.
+                        sequences.insert(&key, Sequence::new(index_j - 1, index_j));
+                        // Add the accumulated sequence to the adjaceny matrix.
+                        am[index_i][index_j].start = am[index_i - 1][index_j - 1].start;
+                        am[index_i][index_j].end = am[index_i - 1][index_j - 1].end + 1;
+                    } else if index_j - index_i == 1 && am[index_i - 1][index_j - 1].end == 0  {
+                        // If a repeating character is encountered for the first time,
+                        // Add the beginning character's index and the index of the current character
+                        // to the adjacency matrix.
+                        am[index_i][index_j].start = index_j - 2;
+                        am[index_i][index_j].end = index_j;
+                    } else {
+                        // For all other sequence matches,
+                        // Add the beginning sequences's index as an offset from the matched index at `index_j`
+                        // and the ending sequence as `index_j`. 
+                        am[index_i][index_j].start = index_j - (am[index_i - 1][index_j - 1].end - am[index_i - 1][index_j - 1].start) - 1;
+                        am[index_i][index_j].end = index_j;
+                        // Add the sequence excluding the very beginning of the start index.
+                        if am[index_i][index_j].end - am[index_i][index_j].start > 1 {
+                            let key: String = String::from(&string[am[index_i][index_j].start + 1..am[index_i][index_j].end]);
+                            sequences.insert(&key, Sequence::new(am[index_i][index_j].start + 1, am[index_i][index_j].end));
+                        }
+                    }
+                    // Add the sequence as an entry to Sequences.
+                    let key: String = String::from(&string[am[index_i][index_j].start..am[index_i][index_j].end]);
+                    sequences.insert(&key, Sequence::new(am[index_i][index_j].start, am[index_i][index_j].end));
+                }
+            }
+        }
+        return sequences;
+    }
+}
+
 impl std::fmt::Display for Sequences {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut text: String = String::new();
@@ -64,66 +128,6 @@ impl std::fmt::Display for Sequences {
     }
 }
 
-/// Given a sequence of UTF-8 encoded characters, return a vector of sub-strings found in the sequence as a vector of Strings.
-///
-/// 
-/// # Example
-///
-/// ```
-/// let string: String = String::from("actgggact");
-/// let expected:Vec<&str> = vec!["a", "ac", "act", "actg", "actgg", "actggg", "actggga", "actgggac", "actgggact", "c", "ct", "g", "gg", "ggg", "t"];
-/// let result: Vec<String> = utils::seq::tokens(string).unwrap();
-/// assert_eq!(result, expected);
-/// ```
-pub fn tokens(string: String) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let input_length: usize = string.len();
-    let mut sequences: Sequences = Sequences::new();
-    let mut am: Vec<Vec<Sequence>> = vec![vec![Sequence::new(0,0); input_length+1];input_length+1];
-    // For each character in the sequence,
-    for index_i in 1..=input_length {
-        // Set the current character value.
-        let current_sequence_value: &str = &string[index_i - 1..index_i];
-        // Compare each character in the sequence to a character in the sequence.
-        for index_j in index_i..=input_length {
-            // Assign the previous character in the sequence to a variable.
-            let previous_sequence_value: &str = &string[index_j - 1..index_j];
-            // If the current character being evaluated matches the previous character,
-            if current_sequence_value == previous_sequence_value {
-                if index_j - index_i == 0 {
-                    // Add the single character's position as an entry to Sequences.
-                    let key = String::from(&string[index_j - 1..index_j]);
-                    // Insert the matching sequence into a B-Tree.
-                    sequences.insert(&key, Sequence::new(index_j - 1, index_j));
-                    // Add the accumulated sequence to the adjaceny matrix.
-                    am[index_i][index_j].start = am[index_i - 1][index_j - 1].start;
-                    am[index_i][index_j].end = am[index_i - 1][index_j - 1].end + 1;
-                } else if index_j - index_i == 1 && am[index_i - 1][index_j - 1].end == 0  {
-                    // If a repeating character is encountered for the first time,
-                    // Add the beginning character's index and the index of the current character
-                    // to the adjacency matrix.
-                    am[index_i][index_j].start = index_j - 2;
-                    am[index_i][index_j].end = index_j;
-                } else {
-                    // For all other sequence matches,
-                    // Add the beginning sequences's index as an offset from the matched index at `index_j`
-                    // and the ending sequence as `index_j`. 
-                    am[index_i][index_j].start = index_j - (am[index_i - 1][index_j - 1].end - am[index_i - 1][index_j - 1].start) - 1;
-                    am[index_i][index_j].end = index_j;
-                    // Add the sequence excluding the very beginning of the start index.
-                    if am[index_i][index_j].end - am[index_i][index_j].start > 1 {
-                        let key: String = String::from(&string[am[index_i][index_j].start + 1..am[index_i][index_j].end]);
-                        sequences.insert(&key, Sequence::new(am[index_i][index_j].start + 1, am[index_i][index_j].end));
-                    }
-                }
-                // Add the sequence as an entry to Sequences.
-                let key: String = String::from(&string[am[index_i][index_j].start..am[index_i][index_j].end]);
-                sequences.insert(&key, Sequence::new(am[index_i][index_j].start, am[index_i][index_j].end));
-            }
-        }
-    }
-    Ok(sequences.get_tokens())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,7 +136,7 @@ mod tests {
     fn test_duplicate_string() {
         let string: String = String::from("actact");
         let expected:Vec<&str> = vec!["a", "ac", "act", "acta", "actac", "actact", "c", "ct", "t"];
-        let result: Vec<String> = tokens(string).unwrap();
+        let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
 
@@ -140,7 +144,7 @@ mod tests {
     fn test_empty_string() {
         let string: String = String::from("");
         let expected:Vec<&str> = vec![];
-        let result: Vec<String> = tokens(string).unwrap();
+        let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
 
@@ -148,7 +152,7 @@ mod tests {
     fn test_multiple_repeating_substrings() {
         let string: String = String::from("actgggact");
         let expected:Vec<&str> = vec!["a", "ac", "act", "actg", "actgg", "actggg", "actggga", "actgggac", "actgggact", "c", "ct", "g", "gg", "ggg", "t"];
-        let result: Vec<String> = tokens(string).unwrap();
+        let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
 
@@ -156,7 +160,7 @@ mod tests {
     fn test_repeating_character() {
         let string = String::from("gggg");
         let expected:Vec<&str> = vec!["g","gg","ggg","gggg"];
-        let result: Vec<String> = tokens(string).unwrap();
+        let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
 
@@ -164,7 +168,7 @@ mod tests {
     fn test_no_repeating_characters() {
         let string: String = String::from("abcdefg");
         let expected:Vec<&str> = vec!["a", "ab", "abc", "abcd", "abcde", "abcdef", "abcdefg", "b", "c", "d", "e", "f", "g"];
-        let result: Vec<String> = tokens(string).unwrap();
+        let result: Vec<String> = Sequences::from(string).get_tokens();
         assert_eq!(result, expected);
     }
 }
