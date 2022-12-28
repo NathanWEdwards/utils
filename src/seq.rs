@@ -1,7 +1,9 @@
 //! MIT license.
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-struct Sequence {
+use serde::ser::SerializeStruct;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+pub struct Sequence {
     start: usize,
     end: usize,
 }
@@ -12,6 +14,22 @@ impl Sequence {
             start: start,
             end: end,
         }
+    }
+
+    pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>>{
+        Ok(serde_json::to_string(&self)?)
+    }
+}
+
+impl serde::ser::Serialize for Sequence {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer, 
+    {
+        let mut serialized_sequence = serializer.serialize_struct("Sequence", 2)?;
+        serialized_sequence.serialize_field("start", &self.start)?;
+        serialized_sequence.serialize_field("end", &self.end)?;
+        serialized_sequence.end()
     }
 }
 
@@ -27,6 +45,21 @@ impl Sequences {
         Sequences {
             data: std::collections::BTreeMap::new(),
         }
+    }
+
+    /// Given a string to match on, this method returns a JSON string representing all matching positions.
+    pub fn find(&self, string: &str) -> Vec<Sequence> {
+        let mut matches: Vec<Sequence> = Vec::new();
+
+        match self.data.get(string) {
+            Some(map) => {
+                for (_, entry) in map.lock().unwrap().iter() {
+                    matches.push(entry.clone());
+                }
+            }
+            None => {}
+        };
+        return matches;
     }
 
     /// Given a sequence of UTF-8 encoded characters, return a vector of sub-strings found in the sequence as a vector of Strings.
@@ -158,7 +191,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_duplicate_string() {
+    fn test_get_tokens_on_duplicate_string() {
         let string: String = String::from("actact");
         let expected: Vec<&str> = vec!["a", "ac", "act", "acta", "actac", "actact", "c", "ct", "t"];
         let result: Vec<String> = Sequences::from(string).get_tokens();
@@ -166,7 +199,7 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_string() {
+    fn test_get_tokens_on_empty_string() {
         let string: String = String::from("");
         let expected: Vec<&str> = vec![];
         let result: Vec<String> = Sequences::from(string).get_tokens();
@@ -174,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_repeating_substrings() {
+    fn test_get_tokens_on_multiple_repeating_substrings() {
         let string: String = String::from("actgggact");
         let expected: Vec<&str> = vec![
             "a",
@@ -198,7 +231,7 @@ mod tests {
     }
 
     #[test]
-    fn test_repeating_character() {
+    fn test_get_tokens_on_repeating_character() {
         let string = String::from("gggg");
         let expected: Vec<&str> = vec!["g", "gg", "ggg", "gggg"];
         let result: Vec<String> = Sequences::from(string).get_tokens();
@@ -206,12 +239,29 @@ mod tests {
     }
 
     #[test]
-    fn test_no_repeating_characters() {
+    fn test_get_tokens_on_no_repeating_characters() {
         let string: String = String::from("abcdefg");
         let expected: Vec<&str> = vec![
             "a", "ab", "abc", "abcd", "abcde", "abcdef", "abcdefg", "b", "c", "d", "e", "f", "g",
         ];
         let result: Vec<String> = Sequences::from(string).get_tokens();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_find_on_multiple_occurrences() {
+        let string: String = String::from("actact");
+        let expected: Vec<Sequence> = vec![Sequence::new(0,3), Sequence::new(3,6)]; 
+        let mut result: Vec<Sequence> = Sequences::from(string).find("act");
+        result.sort();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_find_on_no_matching_occurrences() {
+        let string: String = String::from("actact");
+        let expected: Vec<Sequence> = Vec::new();
+        let result: Vec<Sequence> = Sequences::from(string).find("tt");
         assert_eq!(result, expected);
     }
 }
